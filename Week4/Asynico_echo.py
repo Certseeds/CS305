@@ -21,7 +21,7 @@ async def thinkpeach(reader, writer):
     while True:
         data = await reader.read(11451)
         datas = data.decode().split('\r\n')
-        print (datas[0].split(' ')[0] in ('GET','HEAD'))
+        print(datas[0].split(' ')[0] in ('GET', 'HEAD'))
         print(datas[0].split(' ')[1])
         if data and data != b'exit':
             writer.write(data)
@@ -32,6 +32,7 @@ async def thinkpeach(reader, writer):
             writer.close()
             print("this process jump out")
             return
+
 
 if __name__ == "__main__":
     try:
