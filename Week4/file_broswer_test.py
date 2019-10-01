@@ -28,7 +28,6 @@ list_file = [b'HTTP/1.0 200 OK\r\n',
              b'<body bgcolor="white"> ',
              b'<h1>Index of .//</h1><hr> ',
              b'<pre>',
-
              b'</pre> ',
              b'<hr> ',
              b'\r\n']
@@ -37,14 +36,22 @@ list_files = [
     b'Connection: close\r\n',
     b'Content-Type:text/html; charset=utf-8\r\n',
     b'\r\n',
-    b'<html>',
-    b'<h1>This is a biaoti</h1>',
-    b'<body>',
+    b'<!DOCTYPE html>',
+    b'<html>\r\n',
+    b'<head>\r\n',
+    b'<meta charset="utf-8">\r\n',
+    b'<title> \r\ntest_title\r\n </title>\r\n'
+    b'</head>\r\n',
+    b'<h1>This is a biaoti</h1>\r\n',
+    b'<body>\r\n',
     b'\r\n',
     b'<p>123132564564</p>\r\n',
+    b'<p>\r\n',
+    b'<img src="/pulpit.jpg" alt="Smiley face" width="300" height="200">\r\n',
+    b'</p>\r\n',
     b'\r\n',
-    b'</body> ',
-    b'</html> ',
+    b'</body>\r\n',
+    b'</html>\r\n',
     b'\r\n'
 ]
 server_address = '127.0.0.1'
