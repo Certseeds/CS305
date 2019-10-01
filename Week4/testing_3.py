@@ -1,7 +1,6 @@
 import os
 import mimetypes
 
-
 def test_fun():
     os.chdir("test_dir")
 
@@ -9,7 +8,12 @@ def test_fun():
 def test_fun_2():
     os.chdir("..")
 
+print(os.path.isfile("test_dir/test"))
 
+print(mimetypes.guess_type('picture.jpg'))
+print(mimetypes.guess_type('picture.flac'))
+print(mimetypes.guess_type('picture.avi'))
+print(os.path.abspath("file2.py"))
 print(b'HEAD' in (b'GET', b'HEAD'))
 list = os.listdir()
 for i in list:
@@ -49,3 +53,23 @@ file = open("test_dir/test")
 print(file.read())
 file.close()
 print(mimetypes.guess_type("a.txt")[0])
+print(mimetypes.guess_type('test.flac')[0])
+
+print(os.path.isfile("./echo.py"))
+print(os.path.isdir("./test_dir"))
+current_path = os.path.dirname(__file__)
+
+# 上一级路径（父级路径）
+parent_path = os.path.dirname(current_path)
+
+print("当前路径：" + current_path)
+print("上一级路径：" + parent_path)
+for i in os.listdir("test_dir/test_dir_2"):
+    print(i)
+print(os.path.dirname(__file__))
+os.chdir("./test_dir")
+print(len(os.getcwd()))
+print(os.path.realpath(os.path.dirname(os.getcwd())))
+print(len("123"))
+testing = "123456789"
+print(testing[0:-1])
