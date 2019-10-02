@@ -1,6 +1,6 @@
 import os
 import mimetypes
-
+import html
 def test_fun():
     os.chdir("test_dir")
 
@@ -9,7 +9,7 @@ def test_fun_2():
     os.chdir("..")
 
 print(os.path.isfile("test_dir/test"))
-
+print(mimetypes.guess_type("shuangge.flac"))
 print(mimetypes.guess_type('picture.jpg'))
 print(mimetypes.guess_type('picture.flac'))
 print(mimetypes.guess_type('picture.avi'))
@@ -73,3 +73,8 @@ print(os.path.realpath(os.path.dirname(os.getcwd())))
 print(len("123"))
 testing = "123456789"
 print(testing[0:-1])
+print(testing[-1])
+print(html.escape("./echo.py"))
+
+hanhan = "tezt {}"
+print(hanhan.format(132))
