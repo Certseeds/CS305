@@ -10,7 +10,7 @@ wrong_msg = {
 
 
 class http_Response(object):
-    def __init__(self, path, root_path):
+    def __init__(self, root_path):
         self.head_normal = ['HTTP/1.0 200 OK\r\n',
                             'Connection: close\r\n',
                             'Cache-Control: no-cache\r\n'
@@ -29,10 +29,9 @@ class http_Response(object):
         self.msg = ''
         self.dir = []
         self.body_default = ['</pre>\r\n ',
-                          '<hr> \r\n',
-                          '\r\n']
+                             '<hr> \r\n',
+                             '\r\n']
         self.wrong = ['<!DOCTYPE html>\r\n', "<html>\r\n<body>{} {}<body>\r\n</html>\r\n"]
-        self.path = path
         self.root_path = root_path
         self.body_head[2] = self.body_head[2].format(root_path)
         self.body_head[4] = self.body_head[4].format(root_path)
@@ -53,7 +52,6 @@ class http_Response(object):
             if self.head_normal[i].count(':') > 0 and self.head_normal[i].split(':')[0] == name:
                 self.head_normal[i] = name + ': ' + value + '\r\n'
                 return
-                break
         self.head_normal.insert(-1, name + ': ' + value + '\r\n')
 
     def get_head(self):
@@ -83,8 +81,6 @@ class http_Response(object):
         return self.get_head() + self.get_body()
 
     def get_response_wrong(self):
-        print(self.get_head())
-        print(self.get_wrong())
         return self.get_head() + self.get_wrong()
 
     def fill_file_dir(self, names):
@@ -99,5 +95,4 @@ def get_string(array):
     willreturn = ""
     for i in array:
         willreturn += str(i)
-
     return willreturn
