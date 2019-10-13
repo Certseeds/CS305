@@ -13,6 +13,7 @@ async def thinkpeach(reader, writer):
     data = await reader.read(0x3f3f)
     datas = data.decode().split('\r\n')
     msg = datas[0].split(' ')
+    print(msg)
     method = urllib.parse.unquote(msg[0]) # 避免被空格等干扰
     path = urllib.parse.unquote(msg[1])
     path += ('/' if path[-1] != '/' else '')

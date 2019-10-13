@@ -7,7 +7,7 @@ def test_fun():
 
 def test_fun_2():
     os.chdir("..")
-
+print(mimetypes.guess_type("wtf.pdf"))
 print(os.path.isfile("test_dir/test"))
 print(mimetypes.guess_type("shuangge.flac"))
 print(mimetypes.guess_type('picture.jpg'))
