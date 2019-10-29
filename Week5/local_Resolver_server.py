@@ -1,4 +1,4 @@
-from socket import *
+from rdt import *
 from DNSHeader import *
 import time
 

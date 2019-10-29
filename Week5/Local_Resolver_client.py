@@ -11,7 +11,7 @@
 
 
 
-from socket import *
+from rdt import *
 
 serverName = "127.0.0.1"
 serverPort = 54831

@@ -4,8 +4,10 @@ import urllib.parse
 import html
 
 state_code_msg = {
+    206: "Partial Content",
     404: "Not Found",
-    405: "Method Not Allowed"
+    405: "Method Not Allowed",
+    416: "Requested Range Not Satisfiable"
 }
 
 
@@ -13,7 +15,7 @@ class http_Response(object):
     def __init__(self, root_path):
         self.head_normal = ['HTTP/1.0 200 OK\r\n',
                             'Connection: close\r\n',
-                            'Cache-Control: no-cache\r\n'
+                            'Cache-Control: no-store\r\n'
                             'Server: nanoseeds\r\n',
                             'Content-Type:text/html',
                             '; charset=utf-8\r\n',
@@ -58,6 +60,12 @@ class http_Response(object):
                 return
         self.head_normal.insert(-1, name + ': ' + value + changeline)
 
+    def delete_charset(self, value):
+        for i in range(len(self.head_normal)):
+            if self.head_normal[i] == value:
+                self.head_normal.pop(i)
+                return
+
     def get_header(self, name):
         for i in range(len(self.head_normal)):
             if self.head_normal[i].count(':') > 0 and self.head_normal[i].split(':')[0] == name:
@@ -75,15 +83,35 @@ class http_Response(object):
             return ((get_string(self.body_head) + get_string(self.dir) + get_string(self.file)).encode() +
                     self.msg + get_string(self.body_default).encode())
 
-    def get_file(self, file_name):
+    def get_file(self, file_name, begin, length, use_range):
         try:
             file = open(file_name, mode='rb')
         except FileNotFoundError:
             return b'Not Found'
         willreturn = file.read()
-        self.set_headers('Content-Length', str(len(willreturn)))
+        had_be = True
+        print("{} {} {}".format(begin,length,len(willreturn)))
+        # if use_range and length != len(willreturn):
+        #     self.head_normal[0] = "HTTP/1.0 {} {}\r\n".format(206, state_code_msg[206])
+        if length == -1:
+            length = len(willreturn) - begin
+            had_be = False
+        if use_range and length != 0 and not (begin >= len(willreturn) or begin + length > len(willreturn)):
+            self.head_normal[0] = "HTTP/1.0 {} {}\r\n".format(206, state_code_msg[206])
+        elif use_range and (begin >= len(willreturn) or begin + length > len(willreturn)):
+            self.head_normal[0] = "HTTP/1.0 {} {}\r\n".format(416, state_code_msg[416])
+            begin = 0
+            length = len(willreturn)
+        else:
+            begin = 0
+            length = len(willreturn)
+        self.set_headers('Content-Range', "bytes {}-{}/{}".format(begin, begin + length-1,len(willreturn)))
+        if not had_be:
+            self.set_headers('Content-Range', "bytes {}-{}/{}".format(begin,begin + length-1, len(willreturn)))
+        self.set_headers('Content-Length', str(len(willreturn[begin:begin + length])))
         file.close()
-        return willreturn
+        print("length is {}".format(length))
+        return willreturn[begin:begin + length]
 
     def get_wrong(self):
         return get_string(self.wrong).encode()
@@ -107,3 +135,17 @@ def get_string(array):
     for i in array:
         willreturn += str(i)
     return willreturn
+
+
+def delete_spcae(str):
+    begin = 0
+    end = len(str)
+    while str[begin] == " ":
+        begin += 1
+    while str[end - 1] == " ":
+        end -= 1
+    return str[begin:end]
+
+
+print(delete_spcae(" 12345  "))
+print(delete_spcae("Range: bytes=0-1023".split(':')[1])[6:].split('-')[0])

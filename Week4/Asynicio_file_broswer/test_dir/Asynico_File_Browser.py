@@ -6,7 +6,7 @@ import urllib.parse
 
 path_origin = os.path.dirname(__file__)
 server_address = '127.0.0.1'
-server_port = 11456
+server_port = 11457
 
 
 
@@ -14,7 +14,6 @@ async def thinkpeach(reader, writer):
     data = await reader.read(0x3f3f)
     datas = data.decode().split('\r\n')
     msg = datas[0].split(' ')
-    print(msg)
     method = urllib.parse.unquote(msg[0]) # 避免被空格等干扰
     path = urllib.parse.unquote(msg[1])
     path += ('/' if path[-1] != '/' else '')
@@ -24,7 +23,7 @@ async def thinkpeach(reader, writer):
     if data:
         # 本处逻辑为先判断state,然后按类别分别处理,最后统一返回
         if method not in ('GET', 'HEAD'):
-            willreturn.set_state_code_msg(405)
+            willreturn.set_wrong_msg(405)
             wrong = True
         else:
             if root_path == './':  # self
@@ -47,7 +46,7 @@ async def thinkpeach(reader, writer):
                 willreturn.msg = willreturn.get_file(root_path[0:-1])
             else:
                 wrong = True
-                willreturn.set_state_code_msg(404)
+                willreturn.set_wrong_msg(404)
         if method == 'HEAD' and wrong is False:
             writer.write(willreturn.get_head())
         elif method == 'GET' and wrong is False:

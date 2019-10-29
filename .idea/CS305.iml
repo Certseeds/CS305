@@ -5,6 +5,8 @@
       <sourceFolder url="file://$MODULE_DIR$/Week4" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Week5" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Week4/Asynicio_file_broswer" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Week6" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Week7" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
     <orderEntry type="inheritedJdk" />

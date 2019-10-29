@@ -3,7 +3,7 @@ import mimetypes
 import urllib.parse
 import html
 
-state_code_msg = {
+wrong_msg = {
     404: "Not Found",
     405: "Method Not Allowed"
 }
@@ -39,30 +39,20 @@ class http_Response(object):
     def set_headmessage(self, code, msg):
         self.head_normal[0] = 'HTTP/1.0 {} {}\r\n'.format(code, msg)
 
-    def set_state_code_msg(self, code):
+    def set_wrong_msg(self, code):
         try:
-            msg = state_code_msg[code]
+            msg = wrong_msg[code]
         except KeyError:
             msg = "Wrong Code"
         self.wrong[1] = self.wrong[1].format(code, msg)
         self.set_headmessage(code, msg)
 
     def set_headers(self, name, value):
-        if name == 'Content-Type':
-            changeline = ''
-        else:
-            changeline = '\r\n'
         for i in range(len(self.head_normal)):
             if self.head_normal[i].count(':') > 0 and self.head_normal[i].split(':')[0] == name:
-                self.head_normal[i] = name + ': ' + value + changeline
+                self.head_normal[i] = name + ': ' + value + '\r\n'
                 return
-        self.head_normal.insert(-1, name + ': ' + value + changeline)
-
-    def get_header(self, name):
-        for i in range(len(self.head_normal)):
-            if self.head_normal[i].count(':') > 0 and self.head_normal[i].split(':')[0] == name:
-                return self.head_normal[i].split(':')[1]
-        return ""
+        self.head_normal.insert(-1, name + ': ' + value + '\r\n')
 
     def get_head(self):
         return (get_string(self.head_normal)).encode()
@@ -81,7 +71,6 @@ class http_Response(object):
         except FileNotFoundError:
             return b'Not Found'
         willreturn = file.read()
-        self.set_headers('Content-Length', str(len(willreturn)))
         file.close()
         return willreturn
 

@@ -1,4 +1,4 @@
-import socket
+import rdt
 hello = [b'HTTP/1.0 200 OK\r\n',
          b'Connection: close'
          b'Content-Type:text/html; charset=utf-8\r\n',
@@ -12,7 +12,7 @@ err404 = [b'HTTP/1.0 404 Not Found\r\n',
           b'<html><body>404 Not Found<body></html>\r\n',
           b'\r\n']
 def web():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = rdt.socket(rdt.AF_INET, rdt.SOCK_STREAM)
     sock.bind(('127.0.0.1', 8080))
     sock.listen(10)
     while True:

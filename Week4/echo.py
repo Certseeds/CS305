@@ -1,6 +1,6 @@
-import socket
+import rdt
 def echo():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = rdt.socket(rdt.AF_INET, rdt.SOCK_STREAM)
     sock.bind(('127.0.0.1', 5555))
     sock.listen(10)
     while True:
