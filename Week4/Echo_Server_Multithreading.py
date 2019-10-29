@@ -1,4 +1,4 @@
-import socket, threading
+import rdt, threading
 class Echo(threading.Thread):
     def __init__(self, conn, address):
         threading.Thread.__init__(self)
@@ -14,7 +14,7 @@ class Echo(threading.Thread):
                 self.conn.close()
                 return
 def echo():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = rdt.socket(rdt.AF_INET, rdt.SOCK_STREAM)
     sock.bind(('127.0.0.1', 5555))
     sock.listen(10)
     while True:

@@ -1,4 +1,4 @@
-from socket import *
+from rdt import *
 import time
 '''
 首先,本次出现的 八位数组 能够被写为 [0-f][0-f]的形式,每个字符[0-f]可被转写为[0-1]*4,所以八位数组可以被转写为[0-1]*8,而二进制流中的最小单位就是八位数组:[0-f][0-f]
@@ -6,10 +6,10 @@ import time
 '''
 questions_cache = []
 response_cache = []
-
-server_address = ("127.0.0.1", 54321)
+protNumber = 53
+server_address = ("127.0.0.1", protNumber)
 dns_address = ("114.114.114.114", 53)
-Living_time = 600
+Living_time = 1024
 server_socket = socket(AF_INET, SOCK_DGRAM)
 dns_socket = socket(AF_INET, SOCK_DGRAM)
 server_socket.bind(server_address)
@@ -169,6 +169,7 @@ while True:
             response_cache.pop(index_of)
             dns_socket.sendto(request_object.re_question, dns_address)
             response, useless_address = dns_socket.recvfrom(1145)
+            print("recieve one ")
             server_socket.sendto(response, request_address)
             response_object = dns_H_Q_A(response)
             questions_cache.append(request_object.question)
@@ -188,6 +189,7 @@ while True:
     else:
         # 需要刷新的这部分和上面那部分是同用的,都是先向dns_socket
         print("it first accept")
+        print(request_object.re_question)
         dns_socket.sendto(request_object.re_question, dns_address)
         response, useless_address = dns_socket.recvfrom(1145)
         server_socket.sendto(response, request_address)
