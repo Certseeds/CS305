@@ -1,6 +1,7 @@
 from socket import *
 import random, time
 
+
 class UDPsocket(socket):
     def __init__(self, loss_rate=0.1, corruption_rate=0.3, delay_rate=0.1, delay=10):
         super().__init__(AF_INET, SOCK_DGRAM)
@@ -14,18 +15,18 @@ class UDPsocket(socket):
         self.timeout = value
 
     def recvfrom(self, bufsize):
-        if random.random() < self.delay_rate:
+        if random.random() < self.delay_rate:  # 模拟延迟现象
             time.sleep(self.timeout)
             return None
-        
-        data, addr = super().recvfrom(bufsize)
-        if random.random() < self.loss_rate:
+
+        data, addr = super().recvfrom(bufsize)  # 收到了,没丢包
+        if random.random() < self.loss_rate:  # 模拟丢包,重新侦听
             return self.recvfrom(bufsize)
-        if random.random() < self.corruption_rate:
+        if random.random() < self.corruption_rate:  # 模拟随机位损坏
             return self._corrupt(data), addr
         return data, addr
 
-    def recv(self, bufsize):
+    def recv(self, bufsize):  # 封装recv
         data, addr = self.recvfrom(bufsize)
         return data
 
@@ -35,3 +36,6 @@ class UDPsocket(socket):
             pos = random.randint(0, len(raw) - 1)
             raw[pos] = random.randint(0, 255)
         return bytes(raw)
+
+    def send(self, data):
+        super().send(data)
