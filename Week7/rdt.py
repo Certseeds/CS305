@@ -8,7 +8,9 @@ header_length = 15
 data_length = 2048
 header_format = "!B3IH"
 data_format = "UTF-8"
-
+SYNbit = 1
+FINbit = 2
+ACKbit = 4
 
 class socket(UDPsocket):
     def __init__(self):
@@ -17,10 +19,11 @@ class socket(UDPsocket):
         self.seq_ack = 0
 
     def connect(self, address):
+        self.client = True
         header_1 = struct.pack(header_format, 1, self.seq, self.seq_ack, 0, 0)
         print(header_1)
         self.sendto(header_1, address)
-        data, addr_1 = self.recvfrom(2048)
+        data, addr_1 = self.recvfrom(data_length)
         header_2 = struct.unpack(header_format, data)
         print(header_2)
         if header_2[0] != 5 or header_2[2] != self.seq + 1:
@@ -37,6 +40,7 @@ class socket(UDPsocket):
         pass
 
     def accept(self):
+        self.client = False
         '''
         相当于这玩意的作用是
         socket本身接受一个,
@@ -44,7 +48,7 @@ class socket(UDPsocket):
         接受一个socket,然后new一个socket with recieve 地址返回.
         :return:
         '''
-        data, addr = self.recvfrom(2048)
+        data, addr = self.recvfrom(data_length)
         header_1 = struct.unpack(header_format, data[0:15])
         print(header_1, addr)
         if header_1[0] != 1:
@@ -54,7 +58,7 @@ class socket(UDPsocket):
         header_2 = struct.pack(header_format, 5, self.seq, self.seq_ack, 0, 0)
         print(header_2)
         self.sendto(header_2, addr)
-        data_2, addr_2 = self.recvfrom(2048)
+        data_2, addr_2 = self.recvfrom(data_length)
         header_3 = struct.unpack(header_format, data_2[0:15])
         print(header_3, addr_2)
         if header_3[0] != 4 or header_3[2] != self.seq + 1:
@@ -72,12 +76,41 @@ class socket(UDPsocket):
     def close(self):
         # send fin; receive ack; receive fin; send ack
         # your code here
-        print("{} {}".format(self.seq, self.seq_ack))
-        time.sleep(1200)
-        super().close()
-        pass
+        if self.client:
+            self.send("")
+            self.sendto(struct.pack(header_format, 2, self.seq, self.seq_ack, 0, 0), self.client_address)
+            header_2, useless_address_3 = self.recvfrom(data_length)
+            header_2_unpack = struct.unpack(header_format, header_2[0:15])
+            if header_2_unpack[0] != 4 or self.seq + 1 != header_2_unpack[2]:
+                return
+            header_3, useless_address_4 = self.recvfrom(data_length)
+            header_3_unpack = struct.unpack(header_format, header_3[0:15])
+            if header_3_unpack[0] != 2 or self.seq != header_3_unpack[2]:
+                return
+            self.sendto(struct.pack(header_format, 4, self.seq, header_3_unpack[1]+1, 0, 0), self.client_address)
+            print("{} {}".format(self.seq, self.seq_ack))
+            time.sleep(1)
+            super().close()
+        else:
+            print("server begin close")
+            header_1, useles_address_2 = self.recvfrom(data_length)
+            header_1_unpack = struct.unpack(header_format, header_1[0:15])
+            if header_1_unpack[0] != 2:
+                return
+            self.sendto(struct.pack(header_format, 4, header_1_unpack[2], header_1_unpack[1]+1, 0, 0), self.client_address)
+            time.sleep(1)
+            self.sendto(struct.pack(header_format, 2, self.seq, header_1_unpack[1], 0, 0), self.client_address)
+            header_4,useless_address_5 = self.recvfrom(data_length)
+            header_4_unpack = struct.unpack(header_format,header_4[0:15])
+            if header_4_unpack[0] != 4 or header_4_unpack[2] != self.seq + 1:
+                return
+            print("{} {}".format(self.seq, self.seq_ack))
+            time.sleep(1)
+            self.seq = 0
+            self.seq_ack = 0
+        return
 
-    def recv(self, buffersize=2048):
+    def recv(self, buffersize=data_length):
         print("data in")
         data, addr = self.recvfrom(buffersize)
         header = struct.unpack(header_format, data[0:15])
@@ -108,10 +141,11 @@ class socket(UDPsocket):
         self.sendto(header + data, self.client_address)
         resend = Timer(1.0, self.send, args=[data])
         resend.start()
-        data_ack,useless_2 = self.recvfrom(2048)
-        print(data_ack,"this is data_ack")
+        data_ack, useless_2 = self.recvfrom(data_length)
+        print(data_ack, "this is data_ack")
         data_ack_head = struct.unpack(header_format, data_ack[0:15])
-        if data_ack_head[0] == 4:
+        print(data_ack_head[2], self.seq)
+        if data_ack_head[0] == 4 and data_ack_head[2] == self.seq + len(data):
             resend.cancel()
         self.seq += (header[0] & 0x01) + len(data)
         return
