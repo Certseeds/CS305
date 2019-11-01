@@ -1,5 +1,5 @@
 from rdt import socket
-
+import time
 SERVER_ADDR = "127.0.0.1"
 SERVER_PORT = 23579
 server = socket()
@@ -7,6 +7,7 @@ server.bind((SERVER_ADDR, SERVER_PORT))
 count = 0
 while True:
     conn, client = server.accept()
+    time.sleep(100)
     print("process1 finish")
     while True:
         print("{}-------------------".format(count))
