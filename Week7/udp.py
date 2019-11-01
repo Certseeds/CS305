@@ -9,20 +9,22 @@ class UDPsocket(socket):
         self.corruption_rate = corruption_rate
         self.delay_rate = delay_rate
         self.delay = delay
-        self.timeout = 0.5
+        self.timeouts = 0.5
 
     def settimeout(self, value):
-        self.timeout = value
+        self.timeouts = value
 
     def recvfrom(self, bufsize):
+        data, addr = super().recvfrom(bufsize)
         if random.random() < self.delay_rate:  # 模拟延迟现象
-            time.sleep(self.timeout)
-            return None
-
-        data, addr = super().recvfrom(bufsize)  # 收到了,没丢包
+            time.sleep(self.timeouts)
+            print("delay happen")
+            return data, addr
         if random.random() < self.loss_rate:  # 模拟丢包,重新侦听
+            print("mis happen")
             return self.recvfrom(bufsize)
         if random.random() < self.corruption_rate:  # 模拟随机位损坏
+            print("bit change")
             return self._corrupt(data), addr
         return data, addr
 
@@ -39,3 +41,6 @@ class UDPsocket(socket):
 
     def send(self, data):
         super().send(data)
+
+
+test_socket2 = UDPsocket()
