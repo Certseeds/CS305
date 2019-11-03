@@ -51,13 +51,8 @@ if __name__ == "__main__":
         pass
 socks = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 socks.bind(('127.0.0.1', 5555))
-socks.setblocking(False)
-time.sleep(3)
-print("begin recieve")
-try:
-    data,address_useless = socks.recvfrom(2048)
-except BlockingIOError:
-    data,address_useless = "",("","")
-print(data,address_useless)
-socks.setblocking(True)
-data_2,address_useless_2 = socks.recvfrom(2048)
+time_now = time.time()
+for i in range(0,100,1):
+    socks.sendto(b'J7D7t1wB9jdpD5ifeb9SBVAy4jrxb6cEXLKhxBQRI5EZOxbH9IcD4unhRGWHKuClXinCSUeKZGRgqKWRInJilOsteqpOsDXeiR34BI3gq2QaAya3ZDiQ8ongdBN6srGDXHs8eU6yJGvHyDkTGsSR7ux1nNHb1rfMA5pP6vBIIBtIfGu6xWWPNRorlBTarb7TLNus6pPnh1haybj33mtv3bFbCIJMuCExGkHRtWNEsFngCjfhRCqTQxKPreiUfFRSiunLEYBG49KGRCDThKSRW7InmZsO1gU1FF9oPput17bYmfT1swNH5Ca9g1LRitEmDkxaoEhxCRfCNNxjMFVRiyaw6VZygOgkxMAjfFCBsvkzL88L5FREXrniqxIDi2L3kbEH6TLkv7WbXhm6nGDf3Up2bZOBd7idYWVy87iH1OacEle7PiBGCaj3STLBDZ54pLggzeXWAAtxcrS9AZyPoZep6mpDsuk2sv6uN5WuvevBduKmHpskmaUc2mZebUzIW5y9FTs2'\
+                 ,('127.0.0.1',11451))
+print(time.time()- time_now)

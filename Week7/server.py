@@ -7,7 +7,6 @@ server.bind((SERVER_ADDR, SERVER_PORT))
 count = 0
 while True:
     conn, client = server.accept()
-    time.sleep(100)
     print("process1 finish")
     while True:
         print("{}-------------------".format(count))
@@ -21,4 +20,5 @@ while True:
             break
         conn.send(data)
         print("1 circle over")
+        print(time.time())
     conn.close()

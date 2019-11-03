@@ -5,13 +5,16 @@ import time
 from threading import Timer
 
 header_length = 15
-data_length = 2048
+data_length = 515
 header_format = "!B3IH"
 data_format = "UTF-8"
 SYN_bit = 1
 FIN_bit = 2
 ACK_bit = 4
 Reset_bit = 8
+udp_packet_length = 500
+begin_bytes = b'000000000000000'
+useless_address = ("127.0.0.1", 14151)
 
 
 class socket(UDPsocket):
@@ -19,48 +22,63 @@ class socket(UDPsocket):
         super().__init__()
         self.seq = 0
         self.seq_ack = 0
+        self.accept_null = True
 
     def connect(self, address):
         self.setblocking(False)
         self.client = True
         header_1 = produce_packets(header_format, SYN_bit, self.seq, self.seq_ack)
-        self.sendto(header_1, address)
-        print("send syn finish")
-        time.sleep(1)
-        try:
-            data, addr_1 = self.recvfrom(data_length)
-        except BlockingIOError:
+        while True:
+            self.sendto(header_1, address)
+            print("send syn finish")
             time.sleep(1)
-            print("line 34")
-            self.connect(address)
-            return
-        except TypeError:
-            time.sleep(1)
-            print("line 39")
-            self.connect(address)
-            return
-        print("recieve syn ack finish")
-        header_2 = struct.unpack(header_format, data[0:15])
-        if header_2[0] != SYN_bit + ACK_bit or header_2[2] != self.seq + 1 or check_sum(data):
-            time.sleep(1)
-            print("line 46")
-            self.connect(address)
-            return
+            data = begin_bytes
+            try:
+                data, addr_1 = self.recvfrom(data_length)
+            except BlockingIOError:
+                time.sleep(1)
+                continue
+            except TypeError:
+                time.sleep(1)
+                continue
+            header_2 = struct.unpack(header_format, data[0:15])
+            if header_2[0] != SYN_bit + ACK_bit or header_2[2] != self.seq + 1 or check_sum(data):
+                time.sleep(1)
+                print("line 46")
+                continue
+            if header_2[0] == SYN_bit + ACK_bit and header_2[2] == self.seq + 1 and not check_sum(data):
+                print("recieve syn ack finish")
+                break
+        print("jump out")
         self.seq += 1
         self.seq_ack = header_2[1] + 1
         header_3 = produce_packets(header_format, ACK_bit, self.seq, self.seq_ack)
         self.sendto(header_3, address)
-        print("send ack finish")
+        time.sleep(1.5)
+        print("first step finish")
+        re_header = begin_bytes
+        for i in range(5):
+            try:
+                re_header, addr_2 = self.recvfrom(data_length)
+            except BlockingIOError:
+                pass
+            except TypeError:
+                pass
+            if re_header != begin_bytes:
+                self.sendto(header_3, address)
+            time.sleep(1)
+            print("{} step finish".format(str(i)))
+
         self.client_address = address
         # send syn; receive syn, ack; send ack
         # your code here
-        self.setblocking(True)
+        self.setblocking(False)
         print("coneect finish ")
+        print(time.time())
+        print(self.seq, self.seq_ack, "this is seq and seq ack")
         return
 
     def accept(self):
-        print("now is {}".format(time.time()))
-        self.setblocking(True)
         self.client = False
         '''
         相当于这玩意的作用是
@@ -69,48 +87,52 @@ class socket(UDPsocket):
         接受一个socket,然后new一个socket with recieve 地址返回.
         :return:
         '''
-        try:
-            data, addr = self.recvfrom(data_length)
-        except TypeError:
-            print("line 72")
-            self.accept()
-            return
-        print("recieve syn data")
-        self.setblocking(False)
-        header_1 = struct.unpack(header_format, data[0:15])
-        if header_1[0] != 1 or check_sum(data):
-            print(check_sum(data))
-            print("line 82")
-            self.accept()
-            return
-        self.seq_ack = header_1[1] + 1
-        header_2 = produce_packets(header_format, SYN_bit + ACK_bit, self.seq, self.seq_ack)
-        self.sendto(header_2, addr)
-        print("send syn,ack finish")
-        time.sleep(1)
-        try:
-            data_2, addr_2 = self.recvfrom(data_length)
-        except BlockingIOError:
-            print("line 89")
-            self.accept()
-            return
-        except TypeError:
-            print("line 93")
-            self.accept()
-            return
-        print("recieve ack finish")
-        header_3 = struct.unpack(header_format, data_2[0:15])
-        print( header_3[0])
-        print(header_3[2])
-        print(self.seq+1)
-        if header_3[0] != ACK_bit or header_3[2] != self.seq + 1:
-            print("line 102")
-            self.accept()
-            return
+        while True:
+            self.setblocking(True)
+            try:
+                data, addr = self.recvfrom(data_length)
+            except TypeError:
+                print("line 72")
+                continue
+            print("recieve syn data")
+            self.setblocking(False)
+            header_1 = struct.unpack(header_format, data[0:15])
+            if header_1[0] != SYN_bit or check_sum(data):
+                print(check_sum(data))
+                print("line 82")
+                continue
+            self.seq_ack = header_1[1] + 1
+            header_2 = produce_packets(header_format, SYN_bit + ACK_bit, self.seq, self.seq_ack)
+            self.sendto(header_2, addr)
+            print("send syn,ack finish")
+            header_3 = begin_bytes
+            count = 10
+            for i in range(5):
+                count -= 1
+                time.sleep(1)
+                try:
+                    header_3, addr_2 = self.recvfrom(data_length)
+                except BlockingIOError:
+                    time.sleep(1)
+                except TypeError:
+                    time.sleep(1)
+                header_3_unpack = struct.unpack(header_format, header_3[0:15])
+                print(header_3_unpack[0] == ACK_bit, header_3_unpack[2] == self.seq + 1, check_sum(header_3), "can it jump out?")
+                if header_3_unpack[0] == ACK_bit and header_3_unpack[2] == self.seq + 1 and not check_sum(header_3):
+                    break
+                self.sendto(header_2, addr)
+            break
+        time.sleep(count)
+        print(header_3_unpack[0])
+        print(header_3_unpack[2])
+        print(self.seq + 1)
         self.seq += 1
         self.client_address = addr_2
-        self.setblocking(True)
+        print("this is addr_2 ", addr_2)
+        self.setblocking(False)
         print("accept finish")
+        print(time.time())
+        print(self.seq, self.seq_ack, "this is seq and seq ack")
         return self, self.getsockname()
 
         # receive syn ; send syn, ack; receive ack
@@ -121,56 +143,183 @@ class socket(UDPsocket):
         # send fin; receive ack; receive fin; send ack
         # your code here
         if self.client:
+            need_sec_true = True
             self.send("")
-            self.sendto(struct.pack(header_format, 2, self.seq, self.seq_ack, 0, 0), self.client_address)
-            header_2, useless_address_3 = self.recvfrom(data_length)
-            header_2_unpack = struct.unpack(header_format, header_2[0:15])
-            if header_2_unpack[0] != 4 or self.seq + 1 != header_2_unpack[2]:
-                return
-            header_3, useless_address_4 = self.recvfrom(data_length)
-            header_3_unpack = struct.unpack(header_format, header_3[0:15])
-            if header_3_unpack[0] != 2 or self.seq != header_3_unpack[2]:
-                return
-            self.sendto(struct.pack(header_format, 4, self.seq, header_3_unpack[1] + 1, 0, 0), self.client_address)
+            while True:
+                time.sleep(0.1)
+                print("run in one")
+                self.sendto(produce_packets(header_format, FIN_bit, self.seq, self.seq_ack), self.client_address)
+                try:
+                    header_2, useless_address = self.recvfrom(header_length)
+                except BlockingIOError:
+                    print(1)
+                    continue
+                except TypeError:
+                    print(2)
+                    continue
+                try:
+                    header_2_unpack = struct.unpack(header_format, header_2[0:15])
+                except UnboundLocalError:
+                    print(3)
+                    continue
+                except struct.error:
+                    print(4)
+                    continue
+                if check_sum(header_2):
+                    print(5)
+                    continue
+                if header_2_unpack[0] == ACK_bit and self.seq + 1 == header_2_unpack[2]:
+                    break
+                if header_2_unpack[0] == FIN_bit and self.seq == header_2_unpack[2]:
+                    need_sec_true = False
+                    break
+            while True and need_sec_true:
+                time.sleep(0.1)
+                print("run in two")
+                try:
+                    header_3, useless_address = self.recvfrom(header_length)
+                except BlockingIOError:
+                    print(1)
+                    continue
+                except TypeError:
+                    print(2)
+                    continue
+                try:
+                    header_3_unpack = struct.unpack(header_format, header_3[0:15])
+                except UnboundLocalError:
+                    print(3)
+                    continue
+                except struct.error:
+                    print(4)
+                    continue
+                if check_sum(header_3):
+                    print(5)
+                    continue
+                if header_3_unpack[0] == FIN_bit and self.seq == header_3_unpack[2]:
+                    break
+            for i in range(0, 10, 1):
+                self.sendto(produce_packets(header_format, FIN_bit, self.seq, header_3_unpack[1] + 1), self.client_address)
             print("{} {}".format(self.seq, self.seq_ack))
             time.sleep(1)
+            print("Connect Close")
             super().close()
         else:
+            for i in range(0, 10, 1):
+                try:
+                    data_uesless, addr_uesless = self.recvfrom(204800)
+                except BlockingIOError:
+                    pass
+                except TypeError:
+                    pass
             print("server begin close")
-            header_1, useles_address_2 = self.recvfrom(data_length)
-            header_1_unpack = struct.unpack(header_format, header_1[0:15])
-            if header_1_unpack[0] != 2:
-                return
-            self.sendto(struct.pack(header_format, 4, header_1_unpack[2], header_1_unpack[1] + 1, 0, 0), self.client_address)
+            while True:
+                time.sleep(0.01)
+                print("run in three")
+                try:
+                    header_1, useles_address_2 = self.recvfrom(header_length)
+                except BlockingIOError:
+                    print(1)
+                    continue
+                except TypeError:
+                    print(2)
+                    continue
+                try:
+                    header_1_unpack = struct.unpack(header_format, header_1[0:15])
+                except UnboundLocalError:
+                    print(3)
+                    continue
+                if check_sum(header_1):
+                    print(header_1_unpack)
+                    print(4)
+                    continue
+                if header_1_unpack[0] == FIN_bit:
+                    self.sendto(produce_packets(header_format, ACK_bit, header_1_unpack[2], header_1_unpack[1] + 1), self.client_address)
+                    break
+                else:
+                    print(header_1_unpack)
             time.sleep(1)
-            self.sendto(struct.pack(header_format, 2, self.seq, header_1_unpack[1], 0, 0), self.client_address)
-            header_4, useless_address_5 = self.recvfrom(data_length)
-            header_4_unpack = struct.unpack(header_format, header_4[0:15])
-            if header_4_unpack[0] != 4 or header_4_unpack[2] != self.seq + 1:
-                return
-            print("{} {}".format(self.seq, self.seq_ack))
+            while True:
+                time.sleep(0.01)
+                print("run in four")
+                self.sendto(produce_packets(header_format, FIN_bit, self.seq, header_1_unpack[1]), self.client_address)
+                try:
+                    header_2, useles_address_3 = self.recvfrom(header_length)
+                except BlockingIOError:
+                    pass
+                except TypeError:
+                    pass
+                try:
+                    header_2_unpack = struct.unpack(header_format, header_2[0:15])
+                except UnboundLocalError:
+                    pass
+                except struct.error:
+                    pass
+                if check_sum(header_2):
+                    continue
+                if header_2_unpack[0] == FIN_bit and header_2_unpack[2] == self.seq + 1:
+                    break
             time.sleep(1)
             self.seq = 0
             self.seq_ack = 0
+            print("Connect Close")
         return
 
     def recv(self, buffersize=data_length):
         print("data in")
-        data, addr = self.recvfrom(buffersize)
-        header = struct.unpack(header_format, data[0:15])
-        print(header, "???")
-        self.seq_ack += header[3]
-        willreturn = struct.unpack("{}s".format(header[3]), data[15:])[0]
-        if check_sum(willreturn) == header[4]:
-            self.sendto(struct.pack(header_format, 4, self.seq, self.seq_ack, 0, 0), self.client_address)
-        print(willreturn)
         try:
-            willreturn = str(data[15:].decode(data_format))
-        except AttributeError:
+            data_uesless, addr_uesless = self.recvfrom(buffersize)
+        except BlockingIOError:
             pass
-        print(willreturn)
-        print("data recv")
-        return willreturn
+        except TypeError:
+            pass
+        temp_seq = self.seq
+        temp_ack = self.seq_ack
+        data_willsend = ""
+        count = 0
+        while True:
+            print("now count is {}".format(str(count)))
+            time.sleep(0.01)
+            try:
+                data, addr = self.recvfrom(buffersize)
+            except BlockingIOError:
+                print("dont recieve")
+                continue
+            except TypeError:
+                print("Type Error")
+                continue
+            if check_sum(data):
+                print("Wrong packet")
+                continue
+            data_header = struct.unpack(header_format, data[0:15])
+            try:
+                datas = str(struct.unpack("{}s".format(str(data_header[3])), data[15:])[0].decode(data_format))
+            except UnicodeDecodeError:
+                continue
+            except struct.error:
+                continue
+            if datas == "" and self.accept_null:
+                continue
+            else:
+                print("this time recieve {}".format(datas))
+            self.segment = data_header[0]
+            if not check_sum(data) and data_header[1] == temp_ack:
+                count += 1
+                data_willsend += datas
+                header_send = produce_packets(header_format, self.segment, temp_seq, temp_ack)
+                print(header_send)
+                for i in range(0, 3, 1):
+                    self.sendto(header_send, self.client_address)
+                temp_ack += len(datas)
+            if self.segment == count:
+                break
+        for i in range(0, 100, 1):
+            self.sendto(produce_packets(header_format, self.segment, temp_seq, temp_ack - len(datas)), self.client_address)
+            time.sleep(0.01)
+        print("recieve finish")
+        self.seq_ack = temp_ack
+        print(self.seq, self.seq_ack)
+        self.accept_null = False
+        return data_willsend
 
     def send(self, data):
         try:
@@ -178,20 +327,66 @@ class socket(UDPsocket):
         except AttributeError:
             print(data, " without client_address")
         try:
-            data = bytes(data.encode(data_format))
-        except AttributeError:
+            data_uesless, addr_uesless = self.recvfrom(204800)
+        except BlockingIOError:
             pass
-        header = struct.pack(header_format, ACK_bit, self.seq, self.seq_ack, len(data), check_sum(data))
-        self.sendto(header + data, self.client_address)
-        resend = Timer(1.0, self.send, args=[data])
-        resend.start()
-        data_ack, useless_2 = self.recvfrom(data_length)
-        print(data_ack, "this is data_ack")
-        data_ack_head = struct.unpack(header_format, data_ack[0:15])
-        print(data_ack_head[2], self.seq)
-        if data_ack_head[0] == 4 and data_ack_head[2] == self.seq + len(data):
-            resend.cancel()
-        self.seq += (header[0] & 0x01) + len(data)
+        except TypeError:
+            pass
+        length_of_data = len(data)
+        packet_number = length_of_data // udp_packet_length + (length_of_data % udp_packet_length != 0)
+        packet_list = []
+        temp_seq = self.seq
+        temp_ack = self.seq_ack
+        # accept_list = [False] * len(packet_list)
+        seq_list = []
+        print("packet number is {}".format(str(packet_number)))
+        for i in range(0, packet_number - 1, 1):
+            packet_list.append(produce_packets(header_format, packet_number, temp_seq, temp_ack, data[temp_seq - 1:temp_seq + 499]))
+            print("{} was packetd".format(data[temp_seq - 1:temp_seq + 499]))
+            seq_list.append(temp_seq)
+            temp_seq += 500
+        seq_list.append(temp_seq)
+        packet_list.append(produce_packets(header_format, packet_number, temp_seq, temp_ack, data[temp_seq - 1:]))
+        print("{} was packetd".format(data[temp_seq - 1:]))
+        # temp_seq = 1
+        # temp_ack = 1
+        print(len(packet_list))
+        count = 0
+        while True:
+            i = count
+            print("{} {} ".format(i, count))
+            print("this time begin in {}".format(i))
+            while i < packet_number:
+                time.sleep(0.1)
+                print("run in {}".format(str(i)))
+                self.sendto(packet_list[i], self.client_address)
+                try:
+                    data_ack, useless_address = self.recvfrom(header_length)
+                except BlockingIOError:
+                    i += 1
+                    continue
+                except TypeError:
+                    i += 1
+                    continue
+                except OSError:
+                    pass
+                try:
+                    data_ack_header = struct.unpack(header_format, data_ack[0:15])
+                except UnboundLocalError:
+                    i += 1
+                    continue
+                print(data_ack)
+                print(check_sum(data_ack), data_ack_header[2] == seq_list[count], data_ack_header[0] == packet_number)
+                if not check_sum(data_ack) and data_ack_header[2] == seq_list[count] and data_ack_header[0] == packet_number:
+                    count += 1
+                i += 1
+            if count == packet_number:
+                print("break out!")
+                break
+            time.sleep(1)
+        self.seq += length_of_data
+        print("send message finish")
+        print(self.seq, self.seq_ack)
         return
 
     def output_a_long_string(self, a, b):
@@ -200,9 +395,12 @@ class socket(UDPsocket):
 
 
 def produce_packets(formats, bits, seq, seq_ack, data_str=""):
+    data_bytes = data_str
     try:
         data_bytes = bytes(data_str.encode(data_format))
     except AttributeError:
+        pass
+    except UnicodeEncodeError:
         pass
     header = struct.pack(formats, bits, seq, seq_ack, len(data_str), 0)
     header += data_bytes
