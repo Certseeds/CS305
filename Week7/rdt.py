@@ -173,6 +173,7 @@ class socket(UDPsocket):
                 if header_2_unpack[0] == FIN_bit and self.seq == header_2_unpack[2]:
                     need_sec_true = False
                     break
+            willbe_full = -1
             while True and need_sec_true:
                 time.sleep(0.1)
                 print("run in two")
@@ -196,9 +197,10 @@ class socket(UDPsocket):
                     print(5)
                     continue
                 if header_3_unpack[0] == FIN_bit and self.seq == header_3_unpack[2]:
+                    willbe_full = header_3_unpack[1] + 1
                     break
             for i in range(0, 10, 1):
-                self.sendto(produce_packets(header_format, FIN_bit, self.seq, header_3_unpack[1] + 1), self.client_address)
+                self.sendto(produce_packets(header_format, FIN_bit, self.seq, willbe_full), self.client_address)
             print("{} {}".format(self.seq, self.seq_ack))
             time.sleep(1)
             print("Connect Close")
@@ -376,10 +378,22 @@ class socket(UDPsocket):
                     i += 1
                     continue
                 print(data_ack)
-                print(check_sum(data_ack), data_ack_header[2] == seq_list[count], data_ack_header[0] == packet_number)
+
+                pre_count = -1
+                for i in range(0, packet_number, 1):
+                    if data_ack_header[2] == seq_list[i] and data_ack_header[0] == packet_number:
+                        pre_count = i + 1
+                        break
+                print(check_sum(data_ack), count < pre_count, data_ack_header[0] == packet_number)
+                if not check_sum(data_ack) and count < pre_count:
+                    count = pre_count
+
+                '''
                 if not check_sum(data_ack) and data_ack_header[2] == seq_list[count] and data_ack_header[0] == packet_number:
                     count += 1
+                '''
                 i += 1
+
             if count == packet_number:
                 print("break out!")
                 break
